@@ -2,6 +2,7 @@ import streamlit as st
 import fitz
 from gtts import gTTS
 from pydub import AudioSegment
+from elevenlabs import ElevenLabs
 import os
 import re
 
@@ -41,33 +42,38 @@ def chunk_text(text, chunk_size=3000):
     return chunks
 
 def text_to_audio(text, output_file="output.mp3"):
+    client = ElevenLabs(api_key=st.secrets["ELEVENLABS_API_KEY"])
     chunks = chunk_text(text)
     
     if len(chunks) == 0:
         st.error("No text found in the PDF!")
         return None
-    
-    st.write(f"Total chunks: {len(chunks)}")
-    st.write(f"Text preview: {text[:200]}")
-    
+
     audio_segments = []
     progress = st.progress(0)
     status = st.empty()
-    
+
     for i, chunk in enumerate(chunks):
         status.text(f"Converting chunk {i + 1} of {len(chunks)}...")
+        audio = client.text_to_speech.convert(
+            text=chunk,
+            voice_id="JBFqnCBsd6RMkjVDRZzb",  # free voice called George
+            model_id="eleven_turbo_v2",
+            output_format="mp3_44100_128"
+        )
         chunk_file = f"chunk_{i}.mp3"
-        tts = gTTS(text=chunk, lang="en", slow=False)
-        tts.save(chunk_file)
+        with open(chunk_file, "wb") as f:
+            for chunk_data in audio:
+                f.write(chunk_data)
         audio_segments.append(AudioSegment.from_mp3(chunk_file))
         os.remove(chunk_file)
         progress.progress((i + 1) / len(chunks))
-    
+
     status.text("Stitching audio together...")
     final_audio = audio_segments[0]
     for segment in audio_segments[1:]:
         final_audio += segment
-    
+
     final_audio.export(output_file, format="mp3")
     status.text("Done!")
     return output_file
