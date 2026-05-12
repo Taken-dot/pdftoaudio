@@ -55,12 +55,16 @@ def text_to_audio(text, output_file="output.mp3"):
 
     for i, chunk in enumerate(chunks):
         status.text(f"Converting chunk {i + 1} of {len(chunks)}...")
-        audio = client.text_to_speech.convert(
-            text=chunk,
-            voice_id="JBFqnCBsd6RMkjVDRZzb",  # free voice called George
-            model_id="eleven_monolingual_v1",
-            output_format="mp3_44100_128"
-        )
+        try:
+            audio = client.text_to_speech.convert(
+                text=chunk,
+                voice_id="JBFqnCBsd6RMkjVDRZzb",
+                model_id="eleven_turbo_v2_5",
+                output_format="mp3_44100_128"
+            )
+        except Exception as e:
+            st.error(f"ElevenLabs error: {str(e)}")
+            return None
         chunk_file = f"chunk_{i}.mp3"
         with open(chunk_file, "wb") as f:
             for chunk_data in audio:
@@ -77,6 +81,7 @@ def text_to_audio(text, output_file="output.mp3"):
     final_audio.export(output_file, format="mp3")
     status.text("Done!")
     return output_file
+
 
 # --- UI ---
 st.set_page_config(page_title="PDF to Audio", page_icon="🎧", layout="centered")
