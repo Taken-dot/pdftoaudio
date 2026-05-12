@@ -1,6 +1,5 @@
 streamlit
 pymupdf
-gtts
-pydub==0.25.1
-elevenlabs
+edge-tts
+pydub
 audioop-lts

@@ -2,9 +2,11 @@ import streamlit as st
 import fitz
 from gtts import gTTS
 from pydub import AudioSegment
-from elevenlabs import ElevenLabs
 import os
 import re
+import asyncio
+import edge_tts
+
 
 AudioSegment.converter = "/usr/bin/ffmpeg"
 AudioSegment.ffprobe = "/usr/bin/ffprobe"
@@ -22,7 +24,11 @@ def extract_text_from_pdf(pdf_path):
     doc = fitz.open(pdf_path)
     for page in doc:
         text += page.get_text()
-    return clean_text(text)
+    st.write(f"Raw text length: {len(text)}")
+    st.write(f"Raw preview: {text[:200]}")
+    cleaned = clean_text(text)
+    st.write(f"Cleaned text length: {len(cleaned)}")
+    return cleaned
 
 def chunk_text(text, chunk_size=3000):
     words = text.split()
@@ -41,8 +47,8 @@ def chunk_text(text, chunk_size=3000):
     
     return chunks
 
+
 def text_to_audio(text, output_file="output.mp3"):
-    client = ElevenLabs(api_key=st.secrets["ELEVENLABS_API_KEY"])
     chunks = chunk_text(text)
     
     if len(chunks) == 0:
@@ -55,20 +61,9 @@ def text_to_audio(text, output_file="output.mp3"):
 
     for i, chunk in enumerate(chunks):
         status.text(f"Converting chunk {i + 1} of {len(chunks)}...")
-        try:
-            audio = client.text_to_speech.convert(
-                text=chunk,
-                voice_id="JBFqnCBsd6RMkjVDRZzb",
-                model_id="eleven_turbo_v2_5",
-                output_format="mp3_44100_128"
-            )
-        except Exception as e:
-            st.error(f"ElevenLabs error: {str(e)}")
-            return None
         chunk_file = f"chunk_{i}.mp3"
-        with open(chunk_file, "wb") as f:
-            for chunk_data in audio:
-                f.write(chunk_data)
+        communicate = edge_tts.Communicate(chunk, voice="en-GB-SoniaNeural")
+        asyncio.run(communicate.save(chunk_file))
         audio_segments.append(AudioSegment.from_mp3(chunk_file))
         os.remove(chunk_file)
         progress.progress((i + 1) / len(chunks))
