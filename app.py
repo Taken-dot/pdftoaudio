@@ -58,7 +58,7 @@ def text_to_audio(text, output_file="output.mp3"):
         audio = client.text_to_speech.convert(
             text=chunk,
             voice_id="JBFqnCBsd6RMkjVDRZzb",  # free voice called George
-            model_id="eleven_turbo_v2",
+            model_id="eleven_monolingual_v1",
             output_format="mp3_44100_128"
         )
         chunk_file = f"chunk_{i}.mp3"
