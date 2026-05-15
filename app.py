@@ -1,6 +1,5 @@
 import streamlit as st
 import fitz
-from gtts import gTTS
 from pydub import AudioSegment
 import os
 import re
